@@ -84,17 +84,23 @@ struct ssd_info *initiation(struct ssd_info *ssd)
 
 //	printf("\ninput trace file name:");
 //	gets(ssd->tracefilename);
-	strcpy_s(ssd->tracefilename,25,"example.ascii");
+//	strcpy_s(ssd->tracefilename,25,"example.ascii");
+//	strcpy_s(ssd->tracefilename,25,"CFS.ascii");
+	strcpy_s(ssd->tracefilename,25,"DevDivRelease.ascii");
 
 //	printf("\ninput output file name:");
 //	gets(ssd->outputfilename);
-	strcpy_s(ssd->outputfilename,7,"ex.out");
+//	strcpy_s(ssd->outputfilename,7,"ex.out");
+//	strcpy_s(ssd->outputfilename,25,"CFS.out");
+	strcpy_s(ssd->outputfilename,25,"DevDivRelease.out");
 
 //	printf("\ninput statistic file name:");
 //	gets(ssd->statisticfilename);
-	strcpy_s(ssd->statisticfilename,16,"statistic10.dat");
+//	strcpy_s(ssd->statisticfilename,16,"statistic10.dat");
+//	strcpy_s(ssd->statisticfilename,16,"CFS.dat");
+	strcpy_s(ssd->statisticfilename,25,"DevDivRelease.dat");
 
-	strcpy_s(ssd->statisticfilename2 ,16,"statistic2.dat");
+	//strcpy_s(ssd->statisticfilename2 ,16,"statistic2.dat");
 
 	//导入ssd的配置文件
 	parameters=load_parameters(ssd->parameterfilename);

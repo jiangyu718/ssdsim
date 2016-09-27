@@ -73,7 +73,7 @@ void main()
 
 	printf("\n");
 	printf("the simulation is completed!\n");
-
+	system("pause");
 /* 	_CrtDumpMemoryLeaks(); */
 }
 
@@ -164,8 +164,10 @@ int get_requests(struct ssd_info *ssd)
 	printf("enter get_requests,  current time:%I64u\n",ssd->current_time);
 	#endif
 
-	if(feof(ssd->tracefile))
-		return 0; 
+	if(feof(ssd->tracefile)){
+		return 100; 
+	}
+
 
 	filepoint = ftell(ssd->tracefile);	
 	fgets(buffer, 200, ssd->tracefile); 
@@ -235,13 +237,11 @@ int get_requests(struct ssd_info *ssd)
 		printf("error!\n");
 		while(1){}
 	}
-
-	if(feof(ssd->tracefile))
-	{
-		request1=NULL;
-		return 0;
+	if(feof(ssd->tracefile)){
+		request1 = NULL;
+		return 100; 
 	}
-
+	
 	request1 = (struct request*)malloc(sizeof(struct request));
 	alloc_assert(request1,"request");
 	memset(request1,0, sizeof(struct request));
