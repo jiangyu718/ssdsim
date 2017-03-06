@@ -1,15 +1,16 @@
+（0）先用changetrace的代码把trace转化一下
 （1）在ssd.c中添加2个头文件 ：
 	#include <io.h>
 	#include <Windows.h>
 （2）在initialize.h
 	struct ssd_info{...}中需要填加4个变量：
-			long long filesize;		//trace文件大小
-			long long filelines;		//trace条目数
-			struct trace_info ptr,*ptr; //mmap的文件头指针
+			long long tracesize;		//trace文件大小
+			long long tracelines;		//trace条目数
+			struct trace_info *ptr; //mmap的文件头指针
 			long long current_traceline;//当前行数
 	在这个头文件添加一个结构体：
 	struct trace_info{
-		__int64 time_t;
+		__int64 time_t;		
 		int device;
 		int lsn;
 		int size;
@@ -27,16 +28,18 @@
 （4）在ssd.c中添加一个函数，并在ssd.h申明一下：
 	void my_mmap(struct ssd_info *ssd)
 	{
-		ssd->filesize = filelength(fileno(ssd->tracefile));
-		ssd->filelines = ssd->filesize / sizeof(struct trace_info);
-		HANDLE dumpFileDescriptor = CreateFileA(ssd->tracefilename,
+		HANDLE dumpFileDescriptor;
+		HANDLE fileMappingObject;
+		ssd->tracesize = filelength(fileno(ssd->tracefile));
+		ssd->tracelines = ssd->tracesize / sizeof(struct trace_info);
+		dumpFileDescriptor = CreateFileA(ssd->tracefilename,
                         GENERIC_READ | GENERIC_WRITE,
                         FILE_SHARE_READ | FILE_SHARE_WRITE,
                         NULL,
                         OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL,
                         NULL);
-		HANDLE fileMappingObject = CreateFileMapping(dumpFileDescriptor,
+		fileMappingObject = CreateFileMapping(dumpFileDescriptor,
                         NULL,
                         PAGE_READWRITE,
                         0,
@@ -46,7 +49,7 @@
                   	FILE_MAP_ALL_ACCESS,
                 	0,	
                   	0,
-			ssd->filesize);
+			ssd->tracesize);
 	}
 (5)在ssd.c的get_requests()函数中，将如下几行代码注释掉：
 	if(feof(ssd->tracefile)){		//操作trace文件的代码都要去掉
@@ -58,7 +61,7 @@
 	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
 	
 	将这几行函数改成：
-	if (ssd->current_traceline < ssd->filelines) {
+	if (ssd->current_traceline < ssd->tracelines) {
 		time_t = ssd->ptr[ssd->current_traceline].time_t;
 		device = ssd->ptr[ssd->current_traceline].device;
 		lsn = ssd->ptr[ssd->current_traceline].lsn;
@@ -91,7 +94,7 @@
 	}
 
 	改成：
-		ssd->current_tracelines = 0;		//原来是打开文件，读取完成后关闭，trace被读过2次，现在只打开了一次，需要重新读取文件的话，加一句这个就可以了
+		ssd->current_traceline = 0;		//原来是打开文件，读取完成后关闭，trace被读过2次，现在只打开了一次，需要重新读取文件的话，加一句这个就可以了
 
 （7）pagemap.c的pre_process_page（）函数:
 	下面几行注释掉：
