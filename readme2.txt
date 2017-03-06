@@ -66,7 +66,7 @@
 		device = ssd->ptr[ssd->current_traceline].device;
 		lsn = ssd->ptr[ssd->current_traceline].lsn;
 		size = ssd->ptr[ssd->current_traceline].size;
-		ope = ssd->ptr[ssd->current_traceline].lsn;
+		ope = ssd->ptr[ssd->current_traceline].op;
 		ssd->current_traceline++;
 	} else {
 		return 100;
@@ -117,7 +117,7 @@
 		device = ssd->ptr[ssd->current_traceline].device;
 		lsn = ssd->ptr[ssd->current_traceline].lsn;
 		size = ssd->ptr[ssd->current_traceline].size;
-		ope = ssd->ptr[ssd->current_traceline].lsn;
+		ope = ssd->ptr[ssd->current_traceline].op;
 		ssd->current_traceline++;
 	
 	注释掉最后面的fclose(ssd->tracefile);
