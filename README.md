@@ -13,3 +13,5 @@ ssdsim的一些运行问题：
 		    return 100; 
 	    }
     就可以了
+加速方案：
+> 1.参加readme2.txt
