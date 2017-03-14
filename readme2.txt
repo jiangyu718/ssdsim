@@ -62,7 +62,7 @@
 	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
 	
 	将这几行函数改成：
-	if (ssd->current_traceline < ssd->tracelines) {
+	if (ssd->current_traceline < ssd->tracelines - 1) {
 		time_t = ssd->ptr[ssd->current_traceline].time_t;
 		device = ssd->ptr[ssd->current_traceline].device;
 		lsn = ssd->ptr[ssd->current_traceline].lsn;
@@ -133,5 +133,6 @@
 	注释掉最后面的fclose(ssd->tracefile);
 	
 Tips:之前慢是因为读文件的系统调用，输出的时候实际上也慢，如果trace.out文件不需要的话，可以把输出也关了
+	注释掉
 	
 	
