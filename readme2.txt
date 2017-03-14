@@ -1,3 +1,4 @@
+实先声明：我自己跑出来是由问题的，但是原理就是mmap，关键在于那个my_mmap函数，这个函数相当于windows下的mmap。
 （0）先用changetrace的代码把trace转化一下
 （1）在ssd.c中添加2个头文件 ：
 	#include <io.h>
@@ -25,7 +26,7 @@
 	并在main()最后：
 		fclose(ssd->tracefile);
 
-（4）在ssd.c中添加一个函数，并在ssd.h申明一下：
+（4）在ssd.c中添加一个函数，并在ssd.h声明一下：
 	void my_mmap(struct ssd_info *ssd)
 	{
 		HANDLE dumpFileDescriptor;
@@ -86,6 +87,12 @@
 	再添加一行：
 		ssd->next_request_time = ssd->ptr[ssd->current_traceline].time_t;
 
+	注释掉
+		if(feof(ssd->tracefile)){
+			request1 = NULL;
+			return 100; 
+		}
+
 （6）在ssd.c的simulate()函数中，注释掉下面四行：
 	if((err=fopen_s(&(ssd->tracefile),ssd->tracefilename,"r"))!=0)
 	{  
@@ -95,6 +102,9 @@
 
 	改成：
 		ssd->current_traceline = 0;		//原来是打开文件，读取完成后关闭，trace被读过2次，现在只打开了一次，需要重新读取文件的话，加一句这个就可以了
+	
+	然后注释掉最后的
+		fclose(ssd->tracefile);
 
 （7）pagemap.c的pre_process_page（）函数:
 	下面几行注释掉：
