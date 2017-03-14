@@ -209,6 +209,11 @@ struct ssd_info{
 	struct sub_request *subs_w_tail;
 	struct event_node *event;            //事件队列，每产生一个新的事件，按照时间顺序加到这个队列，在simulate函数最后，根据这个队列队首的时间，确定时间
 	struct channel_info *channel_head;   //指向channel结构体数组的首地址
+
+	long long tracesize;			//trace文件大小
+	long long tracelines;			//trace条目数
+	struct trace_info *ptr;	//mmap的文件头指针
+	long long current_traceline;		//当前行数
 };
 
 
@@ -521,6 +526,13 @@ typedef struct Dram_write_map
 	unsigned int state; 
 }Dram_write_map;
 
+struct trace_info{
+	__int64 time_t;
+	int device;
+	int lsn;
+	int size;
+	int op;
+};
 
 struct ssd_info *initiation(struct ssd_info *);
 struct parameter_value *load_parameters(char parameter_file[30]);

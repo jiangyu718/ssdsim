@@ -24,11 +24,14 @@ Zhiming Zhu     2012/07/19        2.1.1         Correct erase_planes()   8128398
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <io.h>
+#include <Windows.h>
 
 #include "ssd.h"
 #include "initialize.h"
 #include "pagemap.h"
 #include "flash.h"
+
 
 /********************************************************************************************************************************
 1，main函数中initiatio()函数用来初始化ssd,；2，make_aged()函数使SSD成为aged，aged的ssd相当于使用过一段时间的ssd，里面有失效页，
@@ -51,7 +54,17 @@ void main()
 	memset(ssd,0, sizeof(struct ssd_info));
 
 	ssd=initiation(ssd);
-	make_aged(ssd);
+
+/*	if((fopen_s(&(ssd->tracefile),ssd->tracefilename,"rb"))!=0)
+	{  
+		printf("the trace file can't open\n");
+		exit(0);
+	}
+	*/
+	ssd->tracefile = fopen(ssd->tracefilename, "rb"); //用上面的代码打开文件，ssd->ptr就不能访问了
+	my_mmap(ssd);
+
+	//make_aged(ssd);
 	pre_process_page(ssd);
 
 	for (i=0;i<ssd->parameter->channel_number;i++)
@@ -68,6 +81,7 @@ void main()
 	fprintf(ssd->outputfile,"****************** TRACE INFO ******************\n");
 
 	ssd=simulate(ssd);
+	fclose(ssd->tracefile);
 	statistic_output(ssd);  
 /*	free_all_node(ssd);*/
 
@@ -92,26 +106,26 @@ struct ssd_info *simulate(struct ssd_info *ssd)
 	unsigned int a=0,b=0;
 	errno_t err;
 
+
 	printf("\n");
 	printf("begin simulating.......................\n");
 	printf("\n");
 	printf("\n");
 	printf("   ^o^    OK, please wait a moment, and enjoy music and coffee   ^o^    \n");
 
-	if((err=fopen_s(&(ssd->tracefile),ssd->tracefilename,"r"))!=0)
-	{  
-		printf("the trace file can't open\n");
-		return NULL;
-	}
-
+//	if((err=fopen_s(&(ssd->tracefile),ssd->tracefilename,"rb"))!=0)
+//	{  
+//		printf("the trace file can't open\n");
+//		return NULL;
+//	}
+//	my_mmap(ssd);
+	ssd->current_traceline = 0;
 	fprintf(ssd->outputfile,"      arrive           lsn     size ope     begin time    response time    process time\n");	
 	fflush(ssd->outputfile);
 
 	while(flag!=100)      
 	{
-        
 		flag=get_requests(ssd);
-
 		if(flag == 1)
 		{   
 			//printf("once\n");
@@ -132,7 +146,6 @@ struct ssd_info *simulate(struct ssd_info *ssd)
 			flag = 100;
 	}
 
-	fclose(ssd->tracefile);
 	return ssd;
 }
 
@@ -164,15 +177,26 @@ int get_requests(struct ssd_info *ssd)
 	printf("enter get_requests,  current time:%I64u\n",ssd->current_time);
 	#endif
 
-	if(feof(ssd->tracefile)){
-		return 100; 
+	//if(feof(ssd->tracefile)){
+	//	return 100; 
+	//}
+
+//	filepoint = ftell(ssd->tracefile);	
+//	fgets(buffer, 200, ssd->tracefile); 
+//	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
+	if (ssd->current_traceline < ssd->tracelines) {
+		time_t = ssd->ptr[ssd->current_traceline].time_t;
+		device = ssd->ptr[ssd->current_traceline].device;
+		lsn = ssd->ptr[ssd->current_traceline].lsn;
+		size = ssd->ptr[ssd->current_traceline].size;
+		ope = ssd->ptr[ssd->current_traceline].lsn;
+		ssd->current_traceline++;
+	} else {
+		return 100;
 	}
+	
+  //  printf("%I64u %d %d %d %d\n",time_t,device,lsn,size,ope);
 
-
-	filepoint = ftell(ssd->tracefile);	
-	fgets(buffer, 200, ssd->tracefile); 
-	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
-    
 	if ((device<0)&&(lsn<0)&&(size<0)&&(ope<0))
 	{
 		return 100;
@@ -212,7 +236,8 @@ int get_requests(struct ssd_info *ssd)
 			*偏移offset（指针偏移量）个字节的位置。如果执行失败(比如offset超过文件自身大小)，则不改变stream指向的位置。
 			*文本文件只能采用文件头0的定位方式，本程序中打开文件方式是"r":以只读方式打开文本文件	
 			**********************************************************************************/
-			fseek(ssd->tracefile,filepoint,0); 
+			//fseek(ssd->tracefile,filepoint,0); 
+			ssd->current_traceline--;
 			if(ssd->current_time<=nearest_event_time)
 				ssd->current_time=nearest_event_time;
 			return -1;
@@ -221,7 +246,8 @@ int get_requests(struct ssd_info *ssd)
 		{
 			if (ssd->request_queue_length>=ssd->parameter->queue_length)
 			{
-				fseek(ssd->tracefile,filepoint,0);
+				//fseek(ssd->tracefile,filepoint,0);
+				ssd->current_traceline--;
 				ssd->current_time=nearest_event_time;
 				return -1;
 			} 
@@ -283,11 +309,13 @@ int get_requests(struct ssd_info *ssd)
 	}
 
 	
-	filepoint = ftell(ssd->tracefile);	
-	fgets(buffer, 200, ssd->tracefile);    //寻找下一条请求的到达时间
-	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
-	ssd->next_request_time=time_t;
-	fseek(ssd->tracefile,filepoint,0);
+//	filepoint = ftell(ssd->tracefile);	
+//	fgets(buffer, 200, ssd->tracefile);    //寻找下一条请求的到达时间
+//	sscanf(buffer,"%I64u %d %d %d %d",&time_t,&device,&lsn,&size,&ope);
+//	ssd->next_request_time=time_t;
+//	fseek(ssd->tracefile,filepoint,0);
+
+	ssd->next_request_time = ssd->ptr[ssd->current_traceline].time_t;
 
 	return 1;
 }
@@ -1138,4 +1166,33 @@ struct ssd_info *no_buffer_distribute(struct ssd_info *ssd)
 	}
 
 	return ssd;
+}
+
+
+void my_mmap(struct ssd_info *ssd)
+{
+	HANDLE dumpFileDescriptor;
+	HANDLE fileMappingObject;
+	int i;
+	ssd->tracesize = filelength(fileno(ssd->tracefile));
+	ssd->tracelines = ssd->tracesize / sizeof(struct trace_info);
+	//printf("ssd->tracelines = %d",ssd->tracelines);
+	dumpFileDescriptor = CreateFileA(ssd->tracefilename,
+                        GENERIC_READ | GENERIC_WRITE,
+                        FILE_SHARE_READ | FILE_SHARE_WRITE,
+                        NULL,
+                        OPEN_EXISTING,
+                        FILE_ATTRIBUTE_NORMAL,
+                        NULL);
+	fileMappingObject = CreateFileMapping(dumpFileDescriptor,
+                      NULL,
+                      PAGE_READWRITE,
+                      0,
+                      0,
+                      NULL);
+	ssd->ptr =(struct trace_info *)MapViewOfFile(fileMappingObject,
+                      FILE_MAP_ALL_ACCESS,
+                      0,
+                      0,
+					  ssd->tracesize);
 }

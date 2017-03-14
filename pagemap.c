@@ -22,6 +22,7 @@ Zhiming Zhu     2012/07/19        2.1.1         Correct erase_planes()   8128398
 #include <stdlib.h>
 #include <crtdbg.h>
 
+
 #include "initialize.h"
 #include "pagemap.h"
 #include "ssd.h"
@@ -186,19 +187,19 @@ struct ssd_info *pre_process_page(struct ssd_info *ssd)
 	printf("\n");
 	printf("begin pre_process_page.................\n");
 
-	if((err=fopen_s(&(ssd->tracefile),ssd->tracefilename,"r")) != 0 )      /*打开trace文件从中读取请求*/
-	{
-		printf("the trace file can't open\n");
-		return NULL;
-	}
-
 	full_page=~(0xffffffff<<(ssd->parameter->subpage_page));
 	/*计算出这个ssd的最大逻辑扇区号*/
 	largest_lsn=(unsigned int )((ssd->parameter->chip_num*ssd->parameter->die_chip*ssd->parameter->plane_die*ssd->parameter->block_plane*ssd->parameter->page_block*ssd->parameter->subpage_page)*(1-ssd->parameter->overprovide));
-
-	while(fgets(buffer_request,200,ssd->tracefile))
+//	my_mmap(ssd);
+	while(ssd->current_traceline < ssd->tracelines)
 	{
-		sscanf_s(buffer_request,"%I64u %d %d %d %d",&time,&device,&lsn,&size,&ope);
+		//sscanf_s(buffer_request,"%I64u %d %d %d %d",&time,&device,&lsn,&size,&ope);
+		time = ssd->ptr[ssd->current_traceline].time_t;
+		device = ssd->ptr[ssd->current_traceline].device;
+		lsn = ssd->ptr[ssd->current_traceline].lsn;
+		size = ssd->ptr[ssd->current_traceline].size;
+		ope = ssd->ptr[ssd->current_traceline].lsn;
+		ssd->current_traceline++;
 		fl++;
 		trace_assert(time,device,lsn,size,ope);                         /*断言，当读到的time，device，lsn，size，ope不合法时就会处理*/
 
@@ -275,7 +276,7 @@ struct ssd_info *pre_process_page(struct ssd_info *ssd)
 	printf("\n");
 	printf("pre_process is complete!\n");
 
-	fclose(ssd->tracefile);
+	//fclose(ssd->tracefile);
 
 	for(i=0;i<ssd->parameter->channel_number;i++)
     for(j=0;j<ssd->parameter->die_chip;j++)
