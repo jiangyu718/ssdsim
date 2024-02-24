@@ -115,7 +115,7 @@ struct ssd_info *simulate(struct ssd_info *ssd)
 		if(flag == 1)
 		{   
 			//printf("once\n");
-			if (ssd->parameter->dram_capacity!=0)
+			if (ssd->parameter->dram_capacity!=0&&ssd->request_tail->size<=16)
 			{
 				buffer_management(ssd);  
 				distribute(ssd); 
